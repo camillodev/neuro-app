@@ -1,0 +1,111 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo de usuário - sincronizado com Clerk
+model User {
+  id        String   @id @default(uuid())
+  clerkId   String   @unique // ID do usuário no Clerk
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  morningRoutines    MorningRoutineSession[]
+  emotionalStates    DailyEmotionalState[]
+  reportShareTokens  ReportShareToken[]
+
+  @@map("users")
+}
+
+// Sessão de Rotina da Manhã
+model MorningRoutineSession {
+  id              String   @id @default(uuid())
+  userId          String
+  startedAt       DateTime
+  endedAt         DateTime?
+  durationSeconds Int?     // Calculado ao finalizar
+
+  // Checklist obrigatório
+  tookShower      Boolean  @default(false)
+  gotDressed      Boolean  @default(false)
+  hadBreakfast    Boolean  @default(false)
+  tookMeds        Boolean  @default(false)
+
+  // Status da sessão
+  completed       Boolean  @default(false)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  // Relações
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startedAt])
+  @@map("morning_routine_sessions")
+}
+
+// Estado Emocional Diário
+// Estruturado para permitir expansão futura com protocolos GAD-7, PHQ-9, ASRS, PCL-5
+model DailyEmotionalState {
+  id            String   @id @default(uuid())
+  userId        String
+  date          DateTime @db.Date
+
+  // Score simplificado de ansiedade (0-10) para MVP
+  anxietyScore  Int      // 0 = calmo, 10 = difícil funcionar
+
+  // Campos preparados para futuros protocolos
+  // Descomente e adicione campos conforme necessário:
+  // gad7Score     Int?     // Generalized Anxiety Disorder 7-item
+  // phq9Score     Int?     // Patient Health Questionnaire-9 (depressão)
+  // asrsScore     Int?     // Adult ADHD Self-Report Scale
+  // pcl5Score     Int?     // PTSD Checklist for DSM-5
+
+  notes         String?  // Notas opcionais do usuário
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relações
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Garantir apenas um registro por usuário por dia
+  @@unique([userId, date])
+  @@index([userId, date])
+  @@map("daily_emotional_states")
+}
+
+// Tokens para compartilhamento público de relatórios
+model ReportShareToken {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique @default(cuid()) // Token único para a URL pública
+
+  // Filtros aplicados ao relatório
+  dateFrom  DateTime  @db.Date
+  dateTo    DateTime  @db.Date
+
+  // Controle de expiração (opcional)
+  expiresAt DateTime?
+
+  // Metadados
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  // Relações
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@map("report_share_tokens")
+}
