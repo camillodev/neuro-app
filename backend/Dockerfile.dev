@@ -1,0 +1,24 @@
+# Dockerfile para desenvolvimento do Backend
+FROM node:20-alpine
+
+# Instalar dependências necessárias
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copiar arquivos de dependências
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Instalar dependências
+RUN npm ci
+
+# Gerar Prisma Client
+RUN npm run prisma:generate
+
+# Expor porta
+EXPOSE 3001
+
+# Comando padrão (será sobrescrito pelo docker-compose)
+CMD ["npm", "run", "dev"]
+

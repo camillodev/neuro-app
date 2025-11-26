@@ -1,0 +1,88 @@
+services:
+  # Banco de dados PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: neuroapp-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: neuroapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - neuroapp-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: neuroapp-backend
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/neuroapp?schema=public
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY}
+      PORT: 3001
+      NODE_ENV: ${NODE_ENV:-production}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3001}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Montar código fonte para desenvolvimento (opcional)
+      # - ./backend/src:/app/src
+      # Montar node_modules como volume nomeado para melhor performance
+      - backend_node_modules:/app/node_modules
+    command: >
+      sh -c "
+        echo 'Aguardando PostgreSQL...' &&
+        sleep 5 &&
+        npx prisma migrate deploy &&
+        npm start
+      "
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - neuroapp-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY}
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:3001/api}
+    container_name: neuroapp-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - neuroapp-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+  backend_node_modules:
+    driver: local
+
+networks:
+  neuroapp-network:
+    driver: bridge
+

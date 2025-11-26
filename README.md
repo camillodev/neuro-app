@@ -13,12 +13,15 @@ NeuroApp é uma plataforma completa de acompanhamento que ajuda usuários a gere
 - [Arquitetura](#-arquitetura)
 - [Pré-requisitos](#-pré-requisitos)
 - [Instalação e Setup](#-instalação-e-setup)
+  - [Opção A: Setup com Docker (Recomendado)](#opção-a-setup-com-docker-recomendado-)
+  - [Opção B: Setup Manual](#opção-b-setup-manual-desenvolvimento-local)
 - [Configuração](#-configuração)
 - [Como Rodar](#-como-rodar)
 - [Estrutura do Projeto](#-estrutura-do-projeto)
 - [API Endpoints](#-api-endpoints)
 - [Extensibilidade Futura](#-extensibilidade-futura)
 - [Observações Importantes](#-observações-importantes)
+- [Troubleshooting](#-troubleshooting)
 
 ---
 
@@ -127,9 +130,14 @@ frontend/
 
 Antes de começar, você precisa ter instalado:
 
+### Opção 1: Desenvolvimento Local
 - **Node.js** (versão 18+)
 - **npm** ou **yarn**
 - **PostgreSQL** (versão 14+)
+- **Conta no Clerk** ([clerk.com](https://clerk.com)) para autenticação
+
+### Opção 2: Docker (Recomendado)
+- **Docker Desktop** (ou Docker Engine + Docker Compose)
 - **Conta no Clerk** ([clerk.com](https://clerk.com)) para autenticação
 
 ---
@@ -139,8 +147,135 @@ Antes de começar, você precisa ter instalado:
 ### 1. Clone o repositório
 
 ```bash
+git clone <repository-url>
 cd neuro-app
 ```
+
+### Opção A: Setup com Docker (Recomendado) 🐳
+
+A forma mais fácil e compatível de executar a aplicação é usando Docker. Isso garante que todos os ambientes tenham as mesmas versões de dependências.
+
+#### 1. Configurar Variáveis de Ambiente
+
+Crie um arquivo `.env` na raiz do projeto:
+
+```bash
+# Copiar exemplo (se existir)
+cp .env.example .env
+```
+
+Edite o arquivo `.env` com suas chaves do Clerk:
+
+```env
+CLERK_SECRET_KEY=sk_test_...
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+NODE_ENV=production
+FRONTEND_URL=http://localhost:5173
+PUBLIC_URL=http://localhost:3001
+VITE_API_URL=http://localhost:3001/api
+```
+
+#### 2. Executar a Aplicação
+
+**Produção:**
+```bash
+# Construir e iniciar todos os serviços
+docker-compose up -d
+
+# Ver logs em tempo real
+docker-compose logs -f
+
+# Ver logs de um serviço específico
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f postgres
+
+# Parar todos os serviços
+docker-compose down
+```
+
+**Desenvolvimento (com hot reload):**
+```bash
+# Iniciar em modo desenvolvimento
+docker-compose -f docker-compose.dev.yml up
+
+# Parar
+docker-compose -f docker-compose.dev.yml down
+```
+
+#### 3. Scripts de Execução
+
+O projeto inclui um `package.json` na raiz com scripts úteis:
+
+```bash
+# Execução básica
+npm run docker:up              # Iniciar em produção
+npm run docker:down           # Parar serviços
+npm run docker:logs           # Ver logs de todos os serviços
+npm run docker:logs:backend   # Ver logs do backend
+npm run docker:logs:frontend  # Ver logs do frontend
+npm run docker:logs:postgres  # Ver logs do PostgreSQL
+
+# Desenvolvimento
+npm run docker:dev            # Iniciar em modo desenvolvimento (hot reload)
+npm run docker:dev:down        # Parar modo desenvolvimento
+
+# Build e manutenção
+npm run docker:build          # Construir imagens
+npm run docker:rebuild        # Reconstruir imagens (sem cache)
+npm run docker:restart        # Reiniciar serviços
+npm run docker:stop            # Parar serviços (sem remover)
+npm run docker:start          # Iniciar serviços parados
+npm run docker:ps             # Ver status dos containers
+
+# Utilitários
+npm run docker:exec:backend    # Acessar shell do backend
+npm run docker:exec:frontend   # Acessar shell do frontend
+npm run docker:prisma:migrate # Executar migrations
+npm run docker:prisma:studio  # Abrir Prisma Studio
+npm run docker:db:shell       # Acessar shell do PostgreSQL
+
+# Limpeza (⚠️ apaga dados do banco)
+npm run docker:clean          # Parar e remover volumes
+```
+
+**Ou use comandos Docker Compose diretamente:**
+
+```bash
+# Reconstruir um serviço específico
+docker-compose build backend
+docker-compose up -d backend
+
+# Acessar shell do container
+docker-compose exec backend sh
+docker-compose exec frontend sh
+
+# Executar migrations manualmente
+docker-compose exec backend npx prisma migrate deploy
+
+# Abrir Prisma Studio
+docker-compose exec backend npm run prisma:studio
+
+# Acessar banco de dados diretamente
+docker-compose exec postgres psql -U postgres -d neuroapp
+
+# Limpar tudo (⚠️ apaga dados do banco)
+docker-compose down -v
+```
+
+#### 4. URLs de Acesso
+
+Após iniciar os serviços:
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:3001
+- **Health Check**: http://localhost:3001/health
+- **PostgreSQL**: localhost:5432
+
+📖 **Para mais detalhes sobre Docker, consulte [DOCKER.md](./DOCKER.md)**
+
+---
+
+### Opção B: Setup Manual (Desenvolvimento Local)
 
 ### 2. Setup do Backend
 
@@ -223,7 +358,15 @@ VITE_API_URL="http://localhost:3001/api"
 
 ### Configurar PostgreSQL
 
-**Opção 1: PostgreSQL Local**
+**Opção 1: PostgreSQL via Docker (Recomendado)**
+
+Se estiver usando Docker Compose, o PostgreSQL já está incluído. Apenas execute:
+
+```bash
+docker-compose up -d postgres
+```
+
+**Opção 2: PostgreSQL Local**
 
 ```bash
 # Instalar PostgreSQL
@@ -235,7 +378,7 @@ brew services start postgresql
 createdb neuroapp
 ```
 
-**Opção 2: PostgreSQL via Docker**
+**Opção 3: PostgreSQL via Docker (standalone)**
 
 ```bash
 docker run --name neuroapp-db -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=neuroapp -p 5432:5432 -d postgres
@@ -247,9 +390,35 @@ Atualize a `DATABASE_URL` no `.env` do backend conforme necessário.
 
 ## 🏃 Como Rodar
 
-### Desenvolvimento
+### 🐳 Com Docker (Recomendado)
 
-**Terminal 1 - Backend:**
+#### Execução Rápida
+
+```bash
+# Produção
+docker-compose up -d
+
+# Desenvolvimento (hot reload)
+docker-compose -f docker-compose.dev.yml up
+```
+
+#### Scripts de Execução
+
+O projeto já inclui um `package.json` na raiz com todos os scripts necessários. Basta executar:
+
+```bash
+npm run docker:up        # Iniciar em produção
+npm run docker:dev       # Iniciar em desenvolvimento
+npm run docker:logs      # Ver logs
+npm run docker:down      # Parar serviços
+npm run docker:clean     # Limpar volumes (⚠️ apaga dados)
+```
+
+Veja a seção [Scripts de Execução](#3-scripts-de-execução) acima para a lista completa de comandos disponíveis.
+
+### 💻 Desenvolvimento Local (Sem Docker)
+
+#### Terminal 1 - Backend:
 
 ```bash
 cd backend
@@ -258,7 +427,7 @@ npm run dev
 
 Servidor rodando em: `http://localhost:3001`
 
-**Terminal 2 - Frontend:**
+#### Terminal 2 - Frontend:
 
 ```bash
 cd frontend
@@ -267,7 +436,15 @@ npm run dev
 
 Aplicação rodando em: `http://localhost:5173`
 
-### Build para Produção
+### 🚀 Build para Produção
+
+#### Com Docker:
+
+```bash
+docker-compose up -d --build
+```
+
+#### Manual:
 
 **Backend:**
 
@@ -318,30 +495,41 @@ neuro-app/
 │   │   └── server.ts
 │   ├── prisma/
 │   │   └── schema.prisma                     # Schema do banco de dados
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
 │   ├── package.json
 │   ├── tsconfig.json
 │   └── .env.example
 │
-└── frontend/
-    ├── src/
-    │   ├── components/
-    │   │   └── Layout.tsx
-    │   ├── pages/
-    │   │   ├── MorningRoutinePage.tsx        # 🌅 Rotina da Manhã
-    │   │   ├── AnxietyTrackerPage.tsx        # 😰 Registro de Ansiedade
-    │   │   ├── ReportsPage.tsx               # 📊 Relatórios
-    │   │   └── PublicReportPage.tsx          # 🔗 Visualização pública
-    │   ├── services/
-    │   │   └── api.ts                        # Cliente HTTP
-    │   ├── types/
-    │   │   └── index.ts
-    │   ├── App.tsx
-    │   ├── main.tsx
-    │   └── index.css
-    ├── package.json
-    ├── vite.config.ts
-    ├── tailwind.config.js
-    └── .env.example
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── Layout.tsx
+│   │   ├── pages/
+│   │   │   ├── MorningRoutinePage.tsx        # 🌅 Rotina da Manhã
+│   │   │   ├── AnxietyTrackerPage.tsx        # 😰 Registro de Ansiedade
+│   │   │   ├── ReportsPage.tsx               # 📊 Relatórios
+│   │   │   └── PublicReportPage.tsx          # 🔗 Visualização pública
+│   │   ├── services/
+│   │   │   └── api.ts                        # Cliente HTTP
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   ├── App.tsx
+│   │   ├── main.tsx
+│   │   └── index.css
+│   ├── Dockerfile
+│   ├── Dockerfile.dev
+│   ├── nginx.conf
+│   ├── package.json
+│   ├── vite.config.ts
+│   ├── tailwind.config.js
+│   └── .env.example
+│
+├── docker-compose.yml                        # 🐳 Docker Compose (produção)
+├── docker-compose.dev.yml                    # 🐳 Docker Compose (desenvolvimento)
+├── package.json                              # Scripts de execução Docker
+├── DOCKER.md                                 # 📖 Guia completo do Docker
+└── README.md
 ```
 
 ---
@@ -445,6 +633,19 @@ Desenvolvido com foco em ajudar pessoas neurodivergentes a gerenciar suas rotina
 
 ### Erro ao conectar no banco de dados
 
+**Com Docker:**
+```bash
+# Verificar se o serviço está rodando
+docker-compose ps
+
+# Ver logs do PostgreSQL
+docker-compose logs postgres
+
+# Acessar banco diretamente
+docker-compose exec postgres psql -U postgres -d neuroapp
+```
+
+**Sem Docker:**
 ```bash
 # Verificar se o PostgreSQL está rodando
 pg_isready
@@ -455,12 +656,27 @@ psql -U postgres -d neuroapp
 
 ### Erro de autenticação do Clerk
 
-1. Verifique se as chaves estão corretas em ambos `.env`
+1. Verifique se as chaves estão corretas no arquivo `.env`
 2. Certifique-se de que o frontend está usando `VITE_` prefix
 3. Reinicie os servidores após alterar `.env`
+4. **Com Docker**: Reconstrua os containers após alterar variáveis de ambiente:
+   ```bash
+   docker-compose down
+   docker-compose up -d --build
+   ```
 
 ### Erro ao rodar migrations
 
+**Com Docker:**
+```bash
+# Executar migrations manualmente
+docker-compose exec backend npx prisma migrate deploy
+
+# Resetar banco (⚠️ apaga todos os dados)
+docker-compose exec backend npx prisma migrate reset
+```
+
+**Sem Docker:**
 ```bash
 # Resetar banco (⚠️ apaga todos os dados)
 npx prisma migrate reset
@@ -468,6 +684,37 @@ npx prisma migrate reset
 # Rodar migrations novamente
 npm run prisma:migrate
 ```
+
+### Problemas com Docker
+
+```bash
+# Verificar status dos containers
+docker-compose ps
+
+# Ver logs de todos os serviços
+docker-compose logs
+
+# Reconstruir containers
+docker-compose build --no-cache
+
+# Limpar cache do Docker
+docker system prune -a
+
+# Limpar volumes (⚠️ apaga dados)
+docker-compose down -v
+```
+
+### Porta já em uso
+
+Se as portas 3001, 5173 ou 5432 estiverem em uso:
+
+1. **Com Docker**: Altere as portas no `docker-compose.yml`:
+   ```yaml
+   ports:
+     - "3002:3001"  # Mude a porta externa
+   ```
+
+2. **Sem Docker**: Pare o processo que está usando a porta ou altere a configuração no `.env`
 
 ---
 
