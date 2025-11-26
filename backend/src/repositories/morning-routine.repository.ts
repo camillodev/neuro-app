@@ -1,6 +1,5 @@
-import { PrismaClient, MorningRoutineSession } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { MorningRoutineSession } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 export class MorningRoutineRepository {
   /**

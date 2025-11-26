@@ -1,6 +1,5 @@
-import { PrismaClient, DailyEmotionalState } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { DailyEmotionalState } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 
 export class EmotionalStateRepository {
   /**

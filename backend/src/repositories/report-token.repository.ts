@@ -1,7 +1,6 @@
-import { PrismaClient, ReportShareToken } from '@prisma/client';
+import { ReportShareToken } from '@prisma/client';
 import { nanoid } from 'nanoid';
-
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
 
 export class ReportTokenRepository {
   /**
