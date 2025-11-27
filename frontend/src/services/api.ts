@@ -14,6 +14,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 class ApiService {
   private client: AxiosInstance;
+  private getTokenFn: (() => Promise<string | null>) | null = null;
 
   constructor() {
     this.client = axios.create({
@@ -26,8 +27,6 @@ class ApiService {
     // Interceptor para adicionar token de autenticação
     this.client.interceptors.request.use(
       async (config) => {
-        // O token será adicionado pelo Clerk automaticamente via window.Clerk
-        // Este é um placeholder para quando integrarmos o Clerk
         const token = await this.getAuthToken();
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -40,11 +39,16 @@ class ApiService {
     );
   }
 
-  // Método para obter token do Clerk (será implementado com a integração)
+  // Método para configurar a função de obtenção de token (será chamado pelo componente App)
+  setTokenProvider(getTokenFn: () => Promise<string | null>) {
+    this.getTokenFn = getTokenFn;
+  }
+
+  // Método para obter token do Clerk
   private async getAuthToken(): Promise<string | null> {
-    // Placeholder - será implementado com Clerk
-    // const session = await window.Clerk?.session;
-    // return session?.getToken() || null;
+    if (this.getTokenFn) {
+      return await this.getTokenFn();
+    }
     return null;
   }
 

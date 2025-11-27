@@ -4,6 +4,7 @@ dotenv.config();
 
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
+import { clerkMiddleware } from '@clerk/express';
 import 'express-async-errors';
 import routes from './routes';
 
@@ -20,6 +21,9 @@ app.use(cors({
 
 // Parser de JSON
 app.use(express.json());
+
+// Clerk Authentication - deve vir DEPOIS do cors e json parser
+app.use(clerkMiddleware());
 
 // Logger simples
 app.use((req, res, next) => {

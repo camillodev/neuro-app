@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import {
   SignIn,
@@ -5,14 +6,30 @@ import {
   SignedIn,
   SignedOut,
   UserButton,
+  useAuth,
 } from '@clerk/clerk-react';
 import MorningRoutinePage from './pages/MorningRoutinePage';
 import AnxietyTrackerPage from './pages/AnxietyTrackerPage';
 import ReportsPage from './pages/ReportsPage';
 import PublicReportPage from './pages/PublicReportPage';
 import Layout from './components/Layout';
+import apiService from './services/api';
 
-function App() {
+function AppContent() {
+  const { getToken } = useAuth();
+
+  useEffect(() => {
+    // Configurar o provider de token para o serviço de API
+    apiService.setTokenProvider(async () => {
+      try {
+        return await getToken();
+      } catch (error) {
+        console.error('Erro ao obter token:', error);
+        return null;
+      }
+    });
+  }, [getToken]);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -45,6 +62,10 @@ function App() {
       </Routes>
     </BrowserRouter>
   );
+}
+
+function App() {
+  return <AppContent />;
 }
 
 export default App;
