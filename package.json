@@ -4,26 +4,29 @@
   "description": "Aplicação para acompanhamento de rotinas e ansiedade para pessoas neurodivergentes",
   "private": true,
   "scripts": {
-    "up": "docker-compose up -d",
-    "down": "docker-compose down",
+    "setup": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "db": "cd backend && npm run prisma:generate && npm run prisma:migrate",
+    "up": "docker-compose -f docker-compose.dev.yml up postgres -d",
+    "down": "docker-compose -f docker-compose.dev.yml down",
+    "dev": "concurrently --names \"backend,frontend\" --prefix-colors \"blue,green\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "start": "docker-compose up -d --build",
     "logs": "docker-compose logs -f",
     "logs:backend": "docker-compose logs -f backend",
     "logs:frontend": "docker-compose logs -f frontend",
-    "logs:postgres": "docker-compose logs -f postgres",
-    "dev": "docker-compose -f docker-compose.dev.yml up",
-    "dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "logs:postgres": "docker-compose -f docker-compose.dev.yml logs -f postgres",
     "build": "docker-compose build",
     "rebuild": "docker-compose build --no-cache",
     "restart": "docker-compose restart",
     "stop": "docker-compose stop",
-    "start": "docker-compose start",
     "ps": "docker-compose ps",
     "clean": "docker-compose down -v",
     "exec:backend": "docker-compose exec backend sh",
     "exec:frontend": "docker-compose exec frontend sh",
-    "prisma:migrate": "docker-compose exec backend npx prisma migrate deploy",
-    "prisma:studio": "docker-compose exec backend npm run prisma:studio",
-    "db:shell": "docker-compose exec postgres psql -U postgres -d neuroapp"
+    "prisma:migrate": "cd backend && npm run prisma:migrate",
+    "prisma:studio": "cd backend && npm run prisma:studio",
+    "db:shell": "docker-compose -f docker-compose.dev.yml exec postgres psql -U postgres -d neuroapp"
   },
   "keywords": [
     "neuroapp",
@@ -32,6 +35,9 @@
     "docker"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
 }
 
