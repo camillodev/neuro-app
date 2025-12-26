@@ -3,6 +3,7 @@ import { MorningRoutineController } from '../controllers/morning-routine.control
 import { EmotionalStateController } from '../controllers/emotional-state.controller';
 import { ReportController } from '../controllers/report.controller';
 import { requireAuth } from '../middleware/auth';
+import { syncUser } from '../middleware/sync-user';
 
 const router = Router();
 
@@ -11,84 +12,87 @@ const morningRoutineController = new MorningRoutineController();
 const emotionalStateController = new EmotionalStateController();
 const reportController = new ReportController();
 
+// Middleware para sincronizar usuário em todas as rotas protegidas
+const authMiddleware = [requireAuth, syncUser];
+
 // ===== ROTAS DA ROTINA DA MANHÃ =====
 router.post(
   '/morning-routine/start',
-  requireAuth,
+  authMiddleware,
   (req, res) => morningRoutineController.start(req, res)
 );
 
 router.post(
   '/morning-routine/finish',
-  requireAuth,
+  authMiddleware,
   (req, res) => morningRoutineController.finish(req, res)
 );
 
 router.get(
   '/morning-routine/active',
-  requireAuth,
+  authMiddleware,
   (req, res) => morningRoutineController.getActive(req, res)
 );
 
 router.get(
   '/morning-routine/today',
-  requireAuth,
+  authMiddleware,
   (req, res) => morningRoutineController.getToday(req, res)
 );
 
 router.get(
   '/morning-routine/best-time-week',
-  requireAuth,
+  authMiddleware,
   (req, res) => morningRoutineController.getBestTimeWeek(req, res)
 );
 
 // ===== ROTAS DO ESTADO EMOCIONAL =====
 router.post(
   '/emotional-state/save',
-  requireAuth,
+  authMiddleware,
   (req, res) => emotionalStateController.save(req, res)
 );
 
 router.get(
   '/emotional-state/today',
-  requireAuth,
+  authMiddleware,
   (req, res) => emotionalStateController.getToday(req, res)
 );
 
 router.get(
   '/emotional-state/date/:date',
-  requireAuth,
+  authMiddleware,
   (req, res) => emotionalStateController.getByDate(req, res)
 );
 
 // ===== ROTAS DOS RELATÓRIOS =====
 router.post(
   '/reports/summary',
-  requireAuth,
+  authMiddleware,
   (req, res) => reportController.getSummary(req, res)
 );
 
 router.post(
   '/reports/export',
-  requireAuth,
+  authMiddleware,
   (req, res) => reportController.exportPDF(req, res)
 );
 
 router.post(
   '/reports/share',
-  requireAuth,
+  authMiddleware,
   (req, res) => reportController.createShareToken(req, res)
 );
 
 router.get(
   '/reports/tokens',
-  requireAuth,
+  authMiddleware,
   (req, res) => reportController.getShareTokens(req, res)
 );
 
 router.delete(
   '/reports/tokens/:tokenId',
-  requireAuth,
+  authMiddleware,
   (req, res) => reportController.deleteShareToken(req, res)
 );
 
